@@ -70,6 +70,10 @@ func (c apiClient) CreateDevicePreview(artifactSlug string, opts previewOptions)
 	var response struct {
 		URL       string `json:"url"`
 		ExpiresAt string `json:"expires_at"`
+		PRComment *struct {
+			Status  string `json:"status"`
+			Message string `json:"message"`
+		} `json:"pr_comment"`
 	}
 	if err := json.Unmarshal(body, &response); err != nil {
 		return Result{}, fmt.Errorf("parse device preview response: %w", err)
@@ -78,7 +82,13 @@ func (c apiClient) CreateDevicePreview(artifactSlug string, opts previewOptions)
 		return Result{}, fmt.Errorf("the device preview response contained no link")
 	}
 
-	return Result{PreviewURL: response.URL, ExpiresAt: response.ExpiresAt}, nil
+	result := Result{PreviewURL: response.URL, ExpiresAt: response.ExpiresAt}
+	if response.PRComment != nil {
+		result.PRCommentStatus = response.PRComment.Status
+		result.PRCommentMessage = response.PRComment.Message
+	}
+
+	return result, nil
 }
 
 // UploadArtifact deploys a file to this build and returns its artifact slug. Used only when the

@@ -54,10 +54,19 @@ type Config struct {
 	BuildAPIToken string
 }
 
+// Comment statuses the API reports back when a pull request comment was asked for.
+const (
+	PRCommentPosted = "posted"
+)
+
 // Result is what the Step exports once a preview link exists.
 type Result struct {
 	PreviewURL string
 	ExpiresAt  string
+
+	// Empty unless a pull request comment was requested.
+	PRCommentStatus  string
+	PRCommentMessage string
 }
 
 // DevicePreview creates a device preview link for an app built in this build.
@@ -150,6 +159,15 @@ func (s DevicePreview) Run(config Config) (Result, error) {
 		s.logger.Printf("The link expires at %s.", result.ExpiresAt)
 	}
 
+	// The link is the point, so a comment that did not land is worth a warning but not a failure.
+	switch {
+	case result.PRCommentStatus == "":
+	case result.PRCommentStatus == PRCommentPosted:
+		s.logger.Donef("Posted the link as a pull request comment.")
+	default:
+		s.logger.Warnf("The link was not posted as a pull request comment: %s", commentProblem(result))
+	}
+
 	return result, nil
 }
 
@@ -171,6 +189,14 @@ func (s DevicePreview) ExportOutputs(result Result) error {
 	}
 
 	return nil
+}
+
+func commentProblem(result Result) string {
+	if result.PRCommentMessage != "" {
+		return result.PRCommentMessage
+	}
+
+	return result.PRCommentStatus
 }
 
 func linkTTLSeconds(rawHours string) (int, error) {
