@@ -114,10 +114,14 @@ type createdArtifact struct {
 
 func (c apiClient) createArtifact(name string, sizeBytes int64) (createdArtifact, error) {
 	form := url.Values{
-		"api_token":       {c.token},
-		"title":           {name},
-		"filename":        {name},
-		"artifact_type":   {"file"},
+		"api_token":     {c.token},
+		"title":         {name},
+		"filename":      {name},
+		"artifact_type": {"file"},
+		// An absent content_type is how the API recognises a pre-2.0.7 Deploy to Bitrise.io Step
+		// and rejects the request. Empty but present is what the current Step sends for generic
+		// files, and it is what selects GCS-backed storage.
+		"content_type":    {""},
 		"file_size_bytes": {strconv.FormatInt(sizeBytes, 10)},
 	}
 
@@ -148,12 +152,21 @@ func (c apiClient) putFile(uploadURL, path string, sizeBytes int64) error {
 		}
 	}()
 
-	request, err := http.NewRequest(http.MethodPut, uploadURL, file)
+	// A nil body is what makes net/http send Content-Length: 0 rather than omitting it, which an
+	// empty file's signed URL still expects. See golang/go#20257.
+	var body io.Reader
+	if sizeBytes > 0 {
+		body = file
+	}
+
+	request, err := http.NewRequest(http.MethodPut, uploadURL, body)
 	if err != nil {
 		return fmt.Errorf("build upload request: %w", err)
 	}
 	// Storage rejects a chunked PUT, so the length has to be explicit.
 	request.ContentLength = sizeBytes
+	// Part of what the GCS signed URL is signed over.
+	request.Header.Set("X-Upload-Content-Length", strconv.FormatInt(sizeBytes, 10))
 
 	response, err := c.client.Do(request)
 	if err != nil {
