@@ -1,0 +1,29 @@
+format_version: "11"
+default_step_lib_source: https://github.com/bitrise-io/bitrise-steplib.git
+
+workflows:
+  check:
+    steps:
+    - git::https://github.com/bitrise-steplib/steps-check.git: { }
+
+  e2e:
+    steps:
+    - git::https://github.com/bitrise-steplib/steps-check.git:
+        inputs:
+        - workflow: e2e
+
+  # Local debugging only. Needs a real build context, so run it from a Bitrise build or
+  # set BITRISE_BUILD_URL and BITRISE_BUILD_API_TOKEN in .bitrise.secrets.yml.
+  sample:
+    envs:
+    - APP_PATH: $BITRISE_APP_DIR_PATH.zip
+    steps:
+    - path::./:
+        inputs:
+        - app_path: $APP_PATH
+        - post_pr_comment: "false"
+        - verbose: "true"
+
+  generate_readme:
+    steps:
+    - git::https://github.com/bitrise-steplib/steps-readme-generator.git@main: { }

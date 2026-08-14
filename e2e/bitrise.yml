@@ -1,0 +1,122 @@
+format_version: "11"
+default_step_lib_source: https://github.com/bitrise-io/bitrise-steplib.git
+
+workflows:
+  # Covers everything up to the API call: the Step has to find the artifact a previous
+  # Deploy to Bitrise.io Step uploaded rather than uploading a second copy. The build running
+  # this workflow is itself the build the artifact belongs to.
+  test_reuses_deployed_artifact:
+    envs:
+    - APP_NAME: E2E Sample.app
+    before_run:
+    - _make_simulator_app
+    steps:
+    - deploy-to-bitrise-io@2:
+        inputs:
+        - deploy_path: $BITRISE_DEPLOY_DIR/$APP_NAME.zip
+    - path::./:
+        inputs:
+        - app_path: $BITRISE_DEPLOY_DIR/$APP_NAME.zip
+        - post_pr_comment: "false"
+        - verbose: "true"
+    - script:
+        title: Check that no second artifact was uploaded
+        inputs:
+        - content: |-
+            #!/usr/bin/env bash
+            set -euxo pipefail
+            echo "$BITRISE_PERMANENT_DOWNLOAD_URL_MAP" | tr '|' '\n' | grep -c "$APP_NAME.zip" | grep -qx 1
+
+  # A device build must be rejected before any API call: a Simulator cannot run it, so a link
+  # would resolve to a failed install.
+  test_rejects_device_build:
+    before_run:
+    - _make_device_app
+    steps:
+    - path::./:
+        inputs:
+        - app_path: $BITRISE_DEPLOY_DIR/Device Sample.app.zip
+        - fail_on_error: "true"
+        is_skippable: true
+    - script:
+        title: Check that the Step failed
+        is_always_run: true
+        inputs:
+        - content: |-
+            #!/usr/bin/env bash
+            set -euo pipefail
+            if [ "$BITRISE_BUILD_STATUS" != "1" ]; then
+              echo "Expected the Step to fail on a device build"
+              exit 1
+            fi
+            envman add --key BITRISE_BUILD_STATUS --value "0"
+
+  _make_simulator_app:
+    steps:
+    - script:
+        title: Build a minimal simulator .app and zip it
+        inputs:
+        - content: |-
+            #!/usr/bin/env bash
+            set -euxo pipefail
+            app_dir="$BITRISE_DEPLOY_DIR/$APP_NAME"
+            mkdir -p "$app_dir"
+            cat > "$app_dir/Info.plist" <<'PLIST'
+            <?xml version="1.0" encoding="UTF-8"?>
+            <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+            <plist version="1.0">
+            <dict>
+              <key>CFBundleIdentifier</key><string>io.bitrise.e2e.sample</string>
+              <key>CFBundleSupportedPlatforms</key><array><string>iPhoneSimulator</string></array>
+              <key>DTPlatformName</key><string>iphonesimulator</string>
+            </dict>
+            </plist>
+            PLIST
+            (cd "$BITRISE_DEPLOY_DIR" && zip -qr "$APP_NAME.zip" "$APP_NAME" && rm -rf "$APP_NAME")
+
+  _make_device_app:
+    steps:
+    - script:
+        title: Build a minimal device .app and zip it
+        inputs:
+        - content: |-
+            #!/usr/bin/env bash
+            set -euxo pipefail
+            app_dir="$BITRISE_DEPLOY_DIR/Device Sample.app"
+            mkdir -p "$app_dir"
+            cat > "$app_dir/Info.plist" <<'PLIST'
+            <?xml version="1.0" encoding="UTF-8"?>
+            <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+            <plist version="1.0">
+            <dict>
+              <key>CFBundleIdentifier</key><string>io.bitrise.e2e.sample</string>
+              <key>CFBundleSupportedPlatforms</key><array><string>iPhoneOS</string></array>
+              <key>DTPlatformName</key><string>iphoneos</string>
+            </dict>
+            </plist>
+            PLIST
+            (cd "$BITRISE_DEPLOY_DIR" && zip -qr "Device Sample.app.zip" "Device Sample.app" && rm -rf "Device Sample.app")
+
+  # The full path through RDE needs `enable-rde-device-preview` on the CI Workspace and the
+  # service to be up, so it stays manual until Device Preview is stable.
+  manual_test_creates_preview_link:
+    before_run:
+    - _make_simulator_app
+    envs:
+    - APP_NAME: E2E Sample.app
+    steps:
+    - deploy-to-bitrise-io@2:
+        inputs:
+        - deploy_path: $BITRISE_DEPLOY_DIR/$APP_NAME.zip
+    - path::./:
+        inputs:
+        - app_path: $BITRISE_DEPLOY_DIR/$APP_NAME.zip
+        - post_pr_comment: "false"
+        - fail_on_error: "true"
+    - script:
+        title: Check that a link was exported
+        inputs:
+        - content: |-
+            #!/usr/bin/env bash
+            set -euo pipefail
+            [ -n "$BITRISE_DEVICE_PREVIEW_URL" ]

@@ -1,0 +1,182 @@
+title: Device Preview
+summary: Run this build on an iOS Simulator or Android Emulator straight from your pull request.
+description: |-
+  Creates a shareable Device Preview link for an app artifact from this build. Opening the link boots a
+  fresh iOS Simulator or Android Emulator in the browser, installs the app and launches it — nothing to
+  download, and no local Xcode or Android SDK needed.
+
+  The link is exported as `$BITRISE_DEVICE_PREVIEW_URL`, so you can use it anywhere later in the Workflow:
+  post it to Slack, attach it to a GitHub check, drop it into release notes, or feed it to your own
+  notification tooling. By default the Step also posts it as a pull request comment — turn off
+  `post_pr_comment` if you would rather handle sharing yourself.
+
+  ### Supported artifacts
+
+  - **iOS** — a zipped simulator `.app` bundle, for example the `$BITRISE_APP_DIR_PATH.zip` produced by the
+    **Xcode build for simulator** Step. A Simulator cannot run a device build, so `.ipa` files are rejected.
+  - **Android** — an `.apk`. Android App Bundles (`.aab`) cannot be installed directly and are rejected.
+
+  If the file was already uploaded by an earlier **Deploy to Bitrise.io** Step, this Step reuses that
+  artifact instead of uploading it again.
+
+  ### Good to know
+
+  - Links expire after 24 hours by default, and 72 hours is the maximum.
+  - Each open of a link starts its own session, which shuts down automatically once nobody is watching it.
+  - Device Preview has to be enabled for your Workspace.
+website: https://github.com/bitrise-io/steps-device-preview
+source_code_url: https://github.com/bitrise-io/steps-device-preview
+support_url: https://github.com/bitrise-io/steps-device-preview/issues
+
+type_tags:
+- utility
+
+project_type_tags:
+- ios
+- android
+- react-native
+- flutter
+
+toolkit:
+  go:
+    package_name: github.com/bitrise-io/steps-device-preview
+
+inputs:
+- app_path: $BITRISE_APP_DIR_PATH.zip
+  opts:
+    title: App to preview
+    summary: Path to the app to open on a device.
+    description: |-
+      Path to the app to open on a device. It can be:
+
+      - a zipped iOS simulator app bundle, for example `$BITRISE_APP_DIR_PATH.zip` from the
+        **Xcode build for simulator** Step
+      - an iOS simulator `.app` directory, which the Step zips for you
+      - an Android `.apk`
+
+      Device builds (`.ipa`) and Android App Bundles (`.aab`) cannot be installed on a
+      Simulator or Emulator, so the Step rejects them.
+    is_required: true
+
+- platform: ""
+  opts:
+    title: Platform
+    summary: Leave empty to detect the platform from the app itself.
+    description: |-
+      Leave empty to detect the platform from the app itself, which is what you usually want.
+
+      Set it to double-check the app you are passing in: the Step fails if the file turns out to
+      be for the other platform.
+    value_options:
+    - ""
+    - ios
+    - android
+
+- device_model: ""
+  opts:
+    title: Device model
+    summary: Device to boot, for example `iPhone 15` or `pixel_7`. Empty uses the platform default.
+    description: |-
+      Device to boot, for example `iPhone 15` on iOS or `pixel_7` on Android. Empty uses the
+      platform default.
+
+      The value is not validated when the link is created, so a name that does not exist only
+      surfaces when someone opens the link.
+
+- os_version: ""
+  opts:
+    title: OS version
+    summary: OS version to boot, for example `17.5`. Empty uses the platform default.
+    description: |-
+      OS version to boot, for example `17.5`. Empty uses the platform default.
+
+      Only applies to iOS at the moment: Android previews always use the default system image.
+
+- link_ttl_hours: ""
+  opts:
+    title: How long the link should work for
+    summary: Link lifetime in hours. Empty uses the default of 24 hours; 72 is the maximum.
+    description: |-
+      Link lifetime in hours. Empty uses the default of 24 hours, and 72 hours is the maximum.
+
+      Short lifetimes are the main protection against a leaked link being used, so prefer the
+      shortest one that still fits how your team reviews.
+
+- post_pr_comment: "true"
+  opts:
+    title: Post the link as a pull request comment?
+    summary: Post the link as a comment on the pull request this build belongs to.
+    description: |-
+      Post the link as a comment on the pull request this build belongs to.
+
+      Ignored when the build is not a pull request build. The link is always exported as
+      `$BITRISE_DEVICE_PREVIEW_URL` either way, so you can share it however you like.
+    is_required: true
+    value_options:
+    - "true"
+    - "false"
+
+- fail_on_error: "false"
+  opts:
+    title: Fail the build if the preview cannot be created?
+    summary: Fail the build when the Device Preview link cannot be created.
+    description: |-
+      Fail the build when the Device Preview link cannot be created.
+
+      Off by default: a preview is a convenience, and an outage in the preview service should
+      not turn a green build red. A misconfigured Step — a missing app, or a device build where
+      a simulator build was expected — always fails, whatever this is set to.
+    is_required: true
+    value_options:
+    - "false"
+    - "true"
+
+- permanent_download_url_map: $BITRISE_PERMANENT_DOWNLOAD_URL_MAP
+  opts:
+    category: Debug
+    title: Artifacts already deployed by this build
+    summary: Used to reuse an artifact a previous Deploy to Bitrise.io Step already uploaded.
+    description: |-
+      Used to find the app among the artifacts a previous **Deploy to Bitrise.io** Step already
+      uploaded, so the same file is not uploaded twice. When the app is not found here, the Step
+      uploads it itself.
+    is_dont_change_value: true
+
+- verbose: "false"
+  opts:
+    category: Debug
+    title: Enable verbose logging
+    summary: Enable verbose logging.
+    is_required: true
+    value_options:
+    - "false"
+    - "true"
+
+- build_url: $BITRISE_BUILD_URL
+  opts:
+    category: Debug
+    title: Bitrise build URL
+    summary: Unique build URL of this build on Bitrise.io.
+    description: Unique build URL of this build on Bitrise.io. Set automatically.
+    is_required: true
+    is_dont_change_value: true
+
+- build_api_token: $BITRISE_BUILD_API_TOKEN
+  opts:
+    category: Debug
+    title: Bitrise build API token
+    summary: The build's API token for this build on Bitrise.io.
+    description: The build's API token for this build on Bitrise.io. Set automatically.
+    is_required: true
+    is_dont_change_value: true
+    is_sensitive: true
+
+outputs:
+- BITRISE_DEVICE_PREVIEW_URL:
+  opts:
+    title: Device Preview link
+    summary: The shareable link that opens this build on a device.
+- BITRISE_DEVICE_PREVIEW_EXPIRES_AT:
+  opts:
+    title: Device Preview link expiry
+    summary: When the Device Preview link stops working, as an RFC 3339 timestamp.

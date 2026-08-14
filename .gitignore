@@ -1,0 +1,7 @@
+.bitrise.secrets.yml
+.bitrise/
+_tmp/
+.DS_Store
+
+# Downloaded by the `check` workflow's golangci-lint step.
+bin/
