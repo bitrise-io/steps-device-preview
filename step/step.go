@@ -130,8 +130,7 @@ func (s DevicePreview) Run(config Config) (Result, error) {
 	if slug != "" {
 		s.logger.Donef("Found %s among this build's artifacts (%s).", filepath.Base(artifact.Path), slug)
 	} else {
-		s.logger.Warnf("%s was not deployed by an earlier Deploy to Bitrise.io Step, uploading it now.", filepath.Base(artifact.Path))
-		s.logger.Warnf("Add a Deploy to Bitrise.io Step before this one to avoid uploading the same file twice.")
+		s.logger.Printf("%s was not deployed by an earlier Deploy to Bitrise.io Step, uploading it now.", filepath.Base(artifact.Path))
 
 		slug, err = client.UploadArtifact(artifact.Path)
 		if err != nil {
