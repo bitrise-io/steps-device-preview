@@ -21,7 +21,6 @@ workflows:
     - path::./:
         inputs:
         - app_path: $APP_PATH
-        - post_pr_comment: "false"
         - verbose: "true"
 
   generate_readme:

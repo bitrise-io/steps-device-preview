@@ -19,20 +19,16 @@ func run() int {
 
 	config, err := previewStep.ProcessConfig()
 	if err != nil {
-		// A bad config is a bug in the Workflow, so it fails the build regardless of
-		// `fail_on_error` — that input is about the preview service, not about the yml.
 		logger.Errorf("Failed to process Step inputs: %s", err)
 		return 1
 	}
 
 	result, err := previewStep.Run(config)
 	if err != nil {
+		// Set `is_skippable: true` on the Step in your Workflow to keep a failure here from
+		// failing the build.
 		logger.Errorf("Failed to create the device preview: %s", err)
-		if config.FailOnError {
-			return 1
-		}
-		logger.Warnf("Not failing the build: the `fail_on_error` input is off.")
-		return 0
+		return 1
 	}
 
 	if err := previewStep.ExportOutputs(result); err != nil {

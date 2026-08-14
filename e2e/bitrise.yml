@@ -17,7 +17,6 @@ workflows:
     - path::./:
         inputs:
         - app_path: $BITRISE_DEPLOY_DIR/$APP_NAME.zip
-        - post_pr_comment: "false"
         - verbose: "true"
     - script:
         title: Check that no second artifact was uploaded
@@ -36,7 +35,6 @@ workflows:
     - path::./:
         inputs:
         - app_path: $BITRISE_DEPLOY_DIR/Device Sample.app.zip
-        - fail_on_error: "true"
         is_skippable: true
     - script:
         title: Check that the Step failed
@@ -111,8 +109,6 @@ workflows:
     - path::./:
         inputs:
         - app_path: $BITRISE_DEPLOY_DIR/$APP_NAME.zip
-        - post_pr_comment: "false"
-        - fail_on_error: "true"
     - script:
         title: Check that a link was exported
         inputs:

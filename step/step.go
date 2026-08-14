@@ -35,8 +35,7 @@ type Input struct {
 	BuildURL      string          `env:"build_url,required"`
 	BuildAPIToken stepconf.Secret `env:"build_api_token,required"`
 
-	FailOnError bool `env:"fail_on_error,opt[true,false]"`
-	Verbose     bool `env:"verbose,opt[true,false]"`
+	Verbose bool `env:"verbose,opt[true,false]"`
 }
 
 // Config is the validated Step configuration.
@@ -53,8 +52,6 @@ type Config struct {
 
 	BuildURL      string
 	BuildAPIToken string
-
-	FailOnError bool
 }
 
 // Result is what the Step exports once a preview link exists.
@@ -107,7 +104,6 @@ func (s DevicePreview) ProcessConfig() (Config, error) {
 		PermanentDownloadURLMap: input.PermanentDownloadURLMap,
 		BuildURL:                input.BuildURL,
 		BuildAPIToken:           string(input.BuildAPIToken),
-		FailOnError:             input.FailOnError,
 	}, nil
 }
 

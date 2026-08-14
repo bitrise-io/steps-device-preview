@@ -13,8 +13,8 @@ download, and no local Xcode or Android SDK needed.
 
 The link is exported as `$BITRISE_DEVICE_PREVIEW_URL`, so you can use it anywhere later in the Workflow:
 post it to Slack, attach it to a GitHub check, drop it into release notes, or feed it to your own
-notification tooling. By default the Step also posts it as a pull request comment — turn off
-`post_pr_comment` if you would rather handle sharing yourself.
+notification tooling. Set `post_pr_comment` to `true` and the Step also posts it as a pull request
+comment for you.
 
 ### Supported artifacts
 
@@ -27,6 +27,8 @@ artifact instead of uploading it again.
 
 ### Good to know
 
+- The Step fails the build if it cannot create a link. Set `is_skippable: true` on the Step in your
+  Workflow if you would rather a preview problem did not stop the build.
 - Links expire after 24 hours by default, and 72 hours is the maximum.
 - Each open of a link starts its own session, which shuts down automatically once nobody is watching it.
 - Device Preview has to be enabled for your Workspace.
@@ -50,8 +52,7 @@ You can also run this step directly with [Bitrise CLI](https://github.com/bitris
 | `device_model` | Device to boot, for example `iPhone 15` on iOS or `pixel_7` on Android. Empty uses the platform default.  The value is not validated when the link is created, so a name that does not exist only surfaces when someone opens the link. |  |  |
 | `os_version` | OS version to boot, for example `17.5`. Empty uses the platform default.  Only applies to iOS at the moment: Android previews always use the default system image. |  |  |
 | `link_ttl_hours` | Link lifetime in hours. Empty uses the default of 24 hours, and 72 hours is the maximum.  Short lifetimes are the main protection against a leaked link being used, so prefer the shortest one that still fits how your team reviews. |  |  |
-| `post_pr_comment` | Post the link as a comment on the pull request this build belongs to.  Ignored when the build is not a pull request build. The link is always exported as `$BITRISE_DEVICE_PREVIEW_URL` either way, so you can share it however you like. | required | `true` |
-| `fail_on_error` | Fail the build when the Device Preview link cannot be created.  Off by default: a preview is a convenience, and an outage in the preview service should not turn a green build red. A misconfigured Step — a missing app, or a device build where a simulator build was expected — always fails, whatever this is set to. | required | `false` |
+| `post_pr_comment` | Post the link as a comment on the pull request this build belongs to.  Off by default while Device Preview is being trialled, so switching the Step on somewhere busy cannot start commenting on everyone's pull requests. Ignored when the build is not a pull request build. The link is always exported as `$BITRISE_DEVICE_PREVIEW_URL` either way, so you can share it however you like. | required | `false` |
 | `permanent_download_url_map` | Used to find the app among the artifacts a previous **Deploy to Bitrise.io** Step already uploaded, so the same file is not uploaded twice. When the app is not found here, the Step uploads it itself. |  | `$BITRISE_PERMANENT_DOWNLOAD_URL_MAP` |
 | `verbose` | Enable verbose logging. | required | `false` |
 | `build_url` | Unique build URL of this build on Bitrise.io. Set automatically. | required | `$BITRISE_BUILD_URL` |

@@ -7,8 +7,8 @@ description: |-
 
   The link is exported as `$BITRISE_DEVICE_PREVIEW_URL`, so you can use it anywhere later in the Workflow:
   post it to Slack, attach it to a GitHub check, drop it into release notes, or feed it to your own
-  notification tooling. By default the Step also posts it as a pull request comment — turn off
-  `post_pr_comment` if you would rather handle sharing yourself.
+  notification tooling. Set `post_pr_comment` to `true` and the Step also posts it as a pull request
+  comment for you.
 
   ### Supported artifacts
 
@@ -21,6 +21,8 @@ description: |-
 
   ### Good to know
 
+  - The Step fails the build if it cannot create a link. Set `is_skippable: true` on the Step in your
+    Workflow if you would rather a preview problem did not stop the build.
   - Links expire after 24 hours by default, and 72 hours is the maximum.
   - Each open of a link starts its own session, which shuts down automatically once nobody is watching it.
   - Device Preview has to be enabled for your Workspace.
@@ -102,30 +104,17 @@ inputs:
       Short lifetimes are the main protection against a leaked link being used, so prefer the
       shortest one that still fits how your team reviews.
 
-- post_pr_comment: "true"
+- post_pr_comment: "false"
   opts:
     title: Post the link as a pull request comment?
     summary: Post the link as a comment on the pull request this build belongs to.
     description: |-
       Post the link as a comment on the pull request this build belongs to.
 
-      Ignored when the build is not a pull request build. The link is always exported as
-      `$BITRISE_DEVICE_PREVIEW_URL` either way, so you can share it however you like.
-    is_required: true
-    value_options:
-    - "true"
-    - "false"
-
-- fail_on_error: "false"
-  opts:
-    title: Fail the build if the preview cannot be created?
-    summary: Fail the build when the Device Preview link cannot be created.
-    description: |-
-      Fail the build when the Device Preview link cannot be created.
-
-      Off by default: a preview is a convenience, and an outage in the preview service should
-      not turn a green build red. A misconfigured Step — a missing app, or a device build where
-      a simulator build was expected — always fails, whatever this is set to.
+      Off by default while Device Preview is being trialled, so switching the Step on somewhere
+      busy cannot start commenting on everyone's pull requests. Ignored when the build is not a
+      pull request build. The link is always exported as `$BITRISE_DEVICE_PREVIEW_URL` either
+      way, so you can share it however you like.
     is_required: true
     value_options:
     - "false"
